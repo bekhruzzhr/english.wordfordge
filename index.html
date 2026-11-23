@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English WordForge — Tournament Platform</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card: #101828;
+      --card-2: #162033;
+      --border: rgba(255, 255, 255, 0.09);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --gold: #fbbf24;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif; }
+
+    body {
+      background: radial-gradient(circle at top, #13203a 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 14px 60px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(251, 191, 36, 0.14);
+      color: var(--gold);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: clamp(24px, 5vw, 38px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .mode-pill {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: rgba(34, 197, 94, 0.14);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      margin-bottom: 18px;
+    }
+
+    .two-btns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .choice-btn {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 26px 20px;
+      border-radius: 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.18s ease;
+    }
+
+    .choice-btn:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.14);
+    }
+
+    .choice-btn .title {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .choice-btn .desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06101d;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 11px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .quiz-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .q-meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .timer-box {
+      font-size: 20px;
+      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      min-width: 92px;
+      text-align: center;
+    }
+
+    .timer-box.urgent {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.45);
+      animation: pulse 0.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      transition: width 0.25s ease;
+    }
+
+    .question-text {
+      font-size: clamp(18px, 3vw, 23px);
+      line-height: 1.45;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .opt-btn {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 15px 16px;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.14s ease;
+    }
+
+    .opt-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .opt-btn.selected {
+      border-color: var(--gold);
+      background: rgba(251, 191, 36, 0.16);
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .tab-btn {
+      background: var(--card-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #06101d;
+      border-color: var(--accent);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tr.top-1 td:first-child { color: var(--gold); font-weight: 800; }
+
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .notice {
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #86efac;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    .err {
+      color: #f87171;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="badge">ENGLISH WORDFORGE • SCHOOL NO. 37 • 28.11.2026</div>
+      <h1>ENGLISH WORDFORGE</h1>
+      <p class="subtitle">Official Competition System — Grammar • Writing • Speaking</p>
+      <div id="dbModeBadge" class="mode-pill">Mode: Cloud Realtime DB (Live)</div>
+    </div>
+
+    <!-- 1. ГЛАВНЫЙ ЭКРАН: 2 КНОПКИ -->
+    <div id="screenHome" class="card">
+      <h2 style="font-size: 20px; margin-bottom: 6px;">Выберите роль для входа</h2>
+      <p style="color: var(--muted); font-size: 14px;">Капитан регистрирует команду и проходит раунд Grammar. Судьи заходят по секретному ключу.</p>
+      <div class="two-btns">
+        <button class="choice-btn" onclick="showScreen('screenTeamReg')">
+          <span class="title">🚀 Регистрация класса</span>
+          <span class="desc">Введите название команды и класс (например: <b>Тигры</b>, <b>10Ж</b>) и начните Grammar-раунд (32 вопроса по 20 сек).</span>
+        </button>
+        <button class="choice-btn" onclick="showScreen('screenJudgeLogin')">
+          <span class="title">⚖️ Вход для судьи</span>
+          <span class="desc">Доступ по секретному слову: автоматические баллы Grammar, оценки за Writing (0–30) и Speaking (0–50), общий рейтинг.</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. РЕГИСТРАЦИЯ КЛАССА -->
+    <div id="screenTeamReg" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h2 style="font-size:20px;">Регистрация команды</h2>
+        <button class="btn-ghost" onclick="showScreen('screenHome')">← Назад</button>
+      </div>
+      <div id="regError" class="err hidden"></div>
+      <label for="teamNameInput">Название команды</label>
+      <input id="teamNameInput" type="text" placeholder="Например: Тигры" maxlength="40" />
+
+      <label for="classNameInput">Название класса</label>
+      <input id="classNameInput" type="text" placeholder="Например: 10Ж" maxlength="20" />
+
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 16px; line-height: 1.5;">
+        • В раунде <b>Grammar</b> 32 вопроса (16 Easy + 16 Hard).<br/>
+        • На каждый вопрос ровно <b>20 секунд</b>. Скорость ответа не даёт бонусных баллов.<br/>
+        • После выбора варианта правильность ответа <b>не отображается</b>.
+      </p>
+      <button class="btn" id="startQuizBtn" onclick="registerAndStartQuiz()">Зарегистрировать и начать Grammar</button>
+    </div>
+
+    <!-- 3. РАУНД GRAMMAR (КАПИТАН) -->
+    <div id="screenQuiz" class="card hidden">
+      <div class="quiz-top">
+        <div>
+          <div style="font-weight:700; font-size:17px;" id="quizTeamTitle">Команда</div>
+          <div class="q-meta" id="quizMeta">Вопрос 1 / 32 • Easy (1 pt)</div>
+        </div>
+        <div class="timer-box" id="questionTimer">20s</div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="quizProgress" style="width: 3%;"></div>
+      </div>
+
+      <div class="question-text" id="questionText">Loading...</div>
+      <div class="options-grid" id="optionsGrid"></div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <span id="answerStatus" style="font-size: 13px; color: var(--muted);">Выберите вариант ответа (A–D)</span>
+        <button class="btn" id="nextQuestionBtn" onclick="submitCurrentAndNext()">Далее →</button>
+      </div>
+    </div>
+
+    <!-- 4. ЗАВЕРШЕНИЕ GRAMMAR -->
+    <div id="screenTeamDone" class="card hidden" style="text-align: center; padding: 36px 20px;">
+      <div style="font-size: 42px; margin-bottom: 12px;">✅</div>
+      <h2 style="font-size: 24px; margin-bottom: 8px;">Раунд Grammar завершён!</h2>
+      <p style="color: var(--muted); max-width: 480px; margin: 0 auto 20px; line-height: 1.5;">
+        Ответы вашей команды сохранены и отправлены жюри. Ожидайте объявления результатов и следующих этапов (Writing и Speaking).
+      </p>
+      <button class="btn-ghost" onclick="showScreen('screenHome')">На главный экран</button>
+    </div>
+
+    <!-- 5. ВХОД ДЛЯ СУДЬИ -->
+    <div id="screenJudgeLogin" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h2 style="font-size:20px;">Вход для членов жюри</h2>
+        <button class="btn-ghost" onclick="showScreen('screenHome')">← Назад</button>
+      </div>
+      <div id="judgeAuthError" class="err hidden">Неверное секретное слово!</div>
+      <label for="judgeNameInput">Имя судьи (для учёта средней оценки по Writing)</label>
+      <input id="judgeNameInput" type="text" placeholder="Например: Судья 1 / Mr. Smith" />
+
+      <label for="secretWordInput">Секретное слово</label>
+      <input id="secretWordInput" type="password" placeholder="Введите секретное слово" />
+
+      <button class="btn" onclick="loginJudge()">Войти в панель жюри</button>
+    </div>
+
+    <!-- 6. ПАНЕЛЬ СУДЬИ -->
+    <div id="screenJudgePanel" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:21px;">Панель жюри — English WordForge</h2>
+          <div style="font-size:13px; color:var(--muted);" id="judgeLoggedAs">Судья: —</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-ghost" onclick="refreshAll()">Обновить</button>
+          <button class="btn-danger" onclick="logoutJudge()">Выйти</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tabLeaderboard" onclick="switchJudgeTab('tabLeaderboard', this)">🏆 Общий рейтинг (100)</button>
+        <button class="tab-btn" data-tab="tabGrammar" onclick="switchJudgeTab('tabGrammar', this)">📝 Grammar (20)</button>
+        <button class="tab-btn" data-tab="tabWriting" onclick="switchJudgeTab('tabWriting', this)">✍️ Writing (30)</button>
+        <button class="tab-btn" data-tab="tabSpeaking" onclick="switchJudgeTab('tabSpeaking', this)">🎤 Speaking (50)</button>
+      </div>
+
+      <!-- Вкладка 1: Общий рейтинг -->
+      <div id="tabLeaderboard" class="judge-tab">
+        <p style="color:var(--muted); font-size:13px; margin-bottom:12px;">
+          Итоговый балл = Grammar (0–20) + Writing (0–30, среднее по судьям) + Speaking (0–50).
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Команда</th>
+                <th>Класс</th>
+                <th>Grammar (/20)</th>
+                <th>Writing (/30)</th>
+                <th>Speaking (/50)</th>
+                <th>Итого (/100)</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Вкладка 2: Grammar детали -->
+      <div id="tabGrammar" class="judge-tab hidden">
+        <p style="color:var(--muted); font-size:13px; margin-bottom:12px;">
+          Easy: 16 вопросов × 1 pt (макс. 16) • Hard: 16 вопросов × 2 pts (макс. 32) • Формула: (X / 48) × 20.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Команда</th>
+                <th>Класс</th>
+                <th>Easy (1pt)</th>
+                <th>Hard (2pt)</th>
+                <th>Raw (X/48)</th>
+                <th>Final (/20)</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody id="grammarTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Вкладка 3: Writing (5 критериев по 6 баллов, среднее по судьям) -->
+      <div id="tabWriting" class="judge-tab hidden">
+        <label for="writingTeamSelect">Выберите команду для оценки Writing (макс. 30 баллов)</label>
+        <select id="writingTeamSelect" onchange="loadWritingForm()"></select>
+
+        <div class="grid-5">
+          <div>
+            <label for="wAcc">Accuracy (0–6)</label>
+            <input id="wAcc" type="number" min="0" max="6" step="0.5" value="0" />
+          </div>
+          <div>
+            <label for="wVoc">Vocabulary (0–6)</label>
+            <input id="wVoc" type="number" min="0" max="6" step="0.5" value="0" />
+          </div>
+          <div>
+            <label for="wCre">Creativity (0–6)</label>
+            <input id="wCre" type="number" min="0" max="6" step="0.5" value="0" />
+          </div>
+          <div>
+            <label for="wRel">Relevance (0–6)</label>
+            <input id="wRel" type="number" min="0" max="6" step="0.5" value="0" />
+          </div>
+          <div>
+            <label for="wCoh">Coherence (0–6)</label>
+            <input id="wCoh" type="number" min="0" max="6" step="0.5" value="0" />
+          </div>
+        </div>
+
+        <button class="btn" onclick="saveWritingScore()">Сохранить оценку судьи по Writing</button>
+        <div id="writingFeedback" class="notice hidden"></div>
+      </div>
+
+      <!-- Вкладка 4: Speaking (Advertising 30 + Spontaneous 20 = 50) -->
+      <div id="tabSpeaking" class="judge-tab hidden">
+        <label for="speakingTeamSelect">Выберите команду для оценки Speaking (макс. 50 баллов)</label>
+        <select id="speakingTeamSelect" onchange="loadSpeakingForm()"></select>
+
+        <div class="two-btns" style="margin-top: 0;">
+          <div>
+            <label for="spAd">Advertising Challenge (0–30)</label>
+            <input id="spAd" type="number" min="0" max="30" step="0.5" value="0" />
+          </div>
+          <div>
+            <label for="spSpont">Spontaneous Speaking (0–20)</label>
+            <input id="spSpont" type="number" min="0" max="20" step="0.5" value="0" />
+          </div>
+        </div>
+
+        <button class="btn" onclick="saveSpeakingScore()">Сохранить баллы за Speaking</button>
+        <div id="speakingFeedback" class="notice hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. НАСТРОЙКИ FIREBASE И СЕКРЕТНОГО СЛОВА
+    // ==========================================
+    const JUDGE_SECRET = "danikamir";
+    const QUESTION_SECONDS = 20;
+
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDSGXSkiw6rxUNVWB2oXFpZfWg-VGSzgbk",
+      authDomain: "english-wordfordge.firebaseapp.com",
+      databaseURL: "https://english-wordfordge-default-rtdb.firebaseio.com",
+      projectId: "english-wordfordge",
+      storageBucket: "english-wordfordge.firebasestorage.app",
+      messagingSenderId: "621526655503",
+      appId: "1:621526655503:web:b5d64c6905dc17f362b97a",
+      measurementId: "G-GH9MFTM3WB"
+    };
+
+    let db = null;
+    let isCloud = false;
+    if (FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+      isCloud = true;
+      document.getElementById("dbModeBadge").textContent = "Mode: Cloud Realtime DB (Live)";
+    }
+
+    // ==========================================
+    // 2. ОФИЦИАЛЬНЫЕ 32 ВОПРОСА И КЛЮЧИ (PDF)
+    // ==========================================
+    const QUESTIONS = [
+      // Easy (Q1-16, 1 pt each)
+      { id: 1, level: "easy", pts: 1, q: "1. Sarah usually _______ to school by bus, but today she is walking.", opts: ["A) go", "B) goes", "C) is going", "D) went"], ans: "B" },
+      { id: 2, level: "easy", pts: 1, q: "2. _______ your parents _______ coffee in the morning?", opts: ["A) Does / drink", "B) Do / drinks", "C) Are / drink", "D) Do / drink"], ans: "D" },
+      { id: 3, level: "easy", pts: 1, q: "3. We _______ a great documentary about space last night.", opts: ["A) watch", "B) have watched", "C) watched", "D) were watch"], ans: "C" },
+      { id: 4, level: "easy", pts: 1, q: "4. He _______ to the meeting yesterday because he felt sick.", opts: ["A) didn't come", "B) didn't came", "C) wasn't come", "D) hasn't come"], ans: "A" },
+      { id: 5, level: "easy", pts: 1, q: "5. I _______ never _______ sushi, but I would love to try it one day.", opts: ["A) have / eaten", "B) did / eat", "C) has / eaten", "D) am / eating"], ans: "A" },
+      { id: 6, level: "easy", pts: 1, q: "6. Maria has lived in this city _______ five years.", opts: ["A) since", "B) from", "C) during", "D) for"], ans: "D" },
+      { id: 7, level: "easy", pts: 1, q: "7. Don't worry about the heavy suitcase — I _______ you carry it.", opts: ["A) help", "B) will help", "C) will helping", "D) helped"], ans: "B" },
+      { id: 8, level: "easy", pts: 1, q: "8. Scientists believe that people _______ on Mars in the next century.", opts: ["A) live", "B) lived", "C) will live", "D) are living"], ans: "C" },
+      { id: 9, level: "easy", pts: 1, q: "9. My sister wants to become _______ architect after she finishes university.", opts: ["A) a", "B) the", "C) (no article)", "D) an"], ans: "D" },
+      { id: 10, level: "easy", pts: 1, q: "10. _______ Nile is one of the longest rivers in the world.", opts: ["A) The", "B) A", "C) An", "D) (no article)"], ans: "A" },
+      { id: 11, level: "easy", pts: 1, q: "11. English _______ in more than fifty countries around the world.", opts: ["A) speaks", "B) is speaking", "C) is spoken", "D) spoke"], ans: "C" },
+      { id: 12, level: "easy", pts: 1, q: "12. The Mona Lisa _______ by Leonardo da Vinci in the 16th century.", opts: ["A) painted", "B) was painted", "C) is painted", "D) has painted"], ans: "B" },
+      { id: 13, level: "easy", pts: 1, q: "13. You _______ wear a seatbelt when driving — it's the law.", opts: ["A) must", "B) might", "C) could", "D) shouldn't"], ans: "A" },
+      { id: 14, level: "easy", pts: 1, q: "14. Photography is strictly prohibited here. You _______ take photos inside the gallery.", opts: ["A) don't have to", "B) wouldn't", "C) didn't have to", "D) mustn't"], ans: "D" },
+      { id: 15, level: "easy", pts: 1, q: "15. Last weekend, we visited _______ ancient castle and _______ hundreds of photos.", opts: ["A) a / took", "B) an / took", "C) an / taken", "D) the / take"], ans: "B" },
+      { id: 16, level: "easy", pts: 1, q: "16. Mobile phones must _______ off before the competition begins.", opts: ["A) turn", "B) turned", "C) be turned", "D) turning"], ans: "C" },
+
+      // Hard (Q17-32, 2 pts each)
+      { id: 17, level: "hard", pts: 2, q: "17. If the school _______ more funding, it would build a modern science lab right away.", opts: ["A) receives", "B) had received", "C) would receive", "D) received"], ans: "D" },
+      { id: 18, level: "hard", pts: 2, q: "18. They _______ the train if they hadn't stopped to buy coffee at the station.", opts: ["A) wouldn't miss", "B) hadn't missed", "C) wouldn't have missed", "D) didn't miss"], ans: "C" },
+      { id: 19, level: "hard", pts: 2, q: "19. If Daniel had accepted the job offer in London five years ago, he _______ a senior manager now.", opts: ["A) would be", "B) would have been", "C) will be", "D) was"], ans: "A" },
+      { id: 20, level: "hard", pts: 2, q: "20. By the time the rescue team arrived, the hikers _______ in the freezing cave for over ten hours.", opts: ["A) were waiting", "B) had been waiting", "C) have been waiting", "D) would wait"], ans: "B" },
+      { id: 21, level: "hard", pts: 2, q: "21. The ground was completely soaked because it _______ heavily all night before we woke up.", opts: ["A) has been raining", "B) would have rained", "C) is raining", "D) had been raining"], ans: "D" },
+      { id: 22, level: "hard", pts: 2, q: "22. By the time the judges announce the winner at 5 p.m., the participants _______ their speeches.", opts: ["A) will already have finished", "B) will already finish", "C) have already finished", "D) already finished"], ans: "A" },
+      { id: 23, level: "hard", pts: 2, q: "23. Don't call her at 9 p.m.; she _______ to bed by then.", opts: ["A) will go", "B) goes", "C) will have gone", "D) has gone"], ans: "C" },
+      { id: 24, level: "hard", pts: 2, q: "24. Never before _______ such an inspiring speech at the annual conference.", opts: ["A) I have heard", "B) have I heard", "C) did I heard", "D) I heard"], ans: "B" },
+      { id: 25, level: "hard", pts: 2, q: "25. Not only _______ the grammar round, but she also won the award for best speaker.", opts: ["A) she aced", "B) did she aced", "C) she did ace", "D) did she ace"], ans: "D" },
+      { id: 26, level: "hard", pts: 2, q: "26. I clearly remember _______ the front door before we left, so I don't know how it could be open.", opts: ["A) locking", "B) to lock", "C) lock", "D) locked"], ans: "A" },
+      { id: 27, level: "hard", pts: 2, q: "27. After hours of walking uphill, the tourists stopped _______ a short break by the lake.", opts: ["A) taking", "B) take", "C) to take", "D) taken"], ans: "C" },
+      { id: 28, level: "hard", pts: 2, q: "28. All the lights in their house are off and their car is gone. They _______ out for the evening.", opts: ["A) must have gone", "B) should have gone", "C) can't have gone", "D) might not go"], ans: "A" },
+      { id: 29, level: "hard", pts: 2, q: "29. You _______ Mark at the library yesterday — he has been in Japan since Monday!", opts: ["A) mustn't have seen", "B) can't have seen", "C) shouldn't have seen", "D) might not have seen"], ans: "B" },
+      { id: 30, level: "hard", pts: 2, q: "30. We are going to _______ next week before our guests arrive.", opts: ["A) have painted the living room", "B) get the living room paint", "C) make the living room painted", "D) have the living room painted"], ans: "D" },
+      { id: 31, level: "hard", pts: 2, q: "31. Sarah finally got her brother _______ her fix the broken bicycle.", opts: ["A) help", "B) to help", "C) helping", "D) helped"], ans: "B" },
+      { id: 32, level: "hard", pts: 2, q: "32. The committee insisted that the final decision _______ kept confidential until Monday.", opts: ["A) is", "B) was", "C) be", "D) will be"], ans: "C" }
+    ];
+
+    // ==========================================
+    // 3. СОСТОЯНИЕ И ХРАНИЛИЩЕ
+    // ==========================================
+    let teamsCache = {};
+    let currentTeamId = localStorage.getItem("wf_team_id") || null;
+    let currentJudgeName = sessionStorage.getItem("wf_judge_name") || null;
+
+    let qIndex = 0;
+    let selectedOption = null;
+    let answersMap = {};
+    let timeLeft = QUESTION_SECONDS;
+    let timerInterval = null;
+
+    function showScreen(id) {
+      ["screenHome", "screenTeamReg", "screenQuiz", "screenTeamDone", "screenJudgeLogin", "screenJudgePanel"]
+        .forEach(s => document.getElementById(s).classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    async function saveTeamData(teamId, data) {
+      if (isCloud) {
+        await db.ref("teams/" + teamId).set(data);
+      } else {
+        const all = JSON.parse(localStorage.getItem("wf_teams") || "{}");
+        all[teamId] = data;
+        localStorage.setItem("wf_teams", JSON.stringify(all));
+        teamsCache = all;
+      }
+    }
+
+    async function updateTeamPartial(teamId, partial) {
+      if (isCloud) {
+        await db.ref("teams/" + teamId).update(partial);
+      } else {
+        const all = JSON.parse(localStorage.getItem("wf_teams") || "{}");
+        all[teamId] = { ...(all[teamId] || {}), ...partial };
+        localStorage.setItem("wf_teams", JSON.stringify(all));
+        teamsCache = all;
+      }
+    }
+
+    function listenTeams(callback) {
+      if (isCloud) {
+        db.ref("teams").on("value", snap => {
+          teamsCache = snap.val() || {};
+          callback(teamsCache);
+        });
+      } else {
+        teamsCache = JSON.parse(localStorage.getItem("wf_teams") || "{}");
+        callback(teamsCache);
+      }
+    }
+
+    function refreshAll() {
+      listenTeams(renderJudgeViews);
+    }
+
+    // ==========================================
+    // 4. РЕГИСТРАЦИЯ И GRAMMAR-РАУНД
+    // ==========================================
+    async function registerAndStartQuiz() {
+      const teamName = document.getElementById("teamNameInput").value.trim();
+      const className = document.getElementById("classNameInput").value.trim();
+      const errEl = document.getElementById("regError");
+
+      if (!teamName || !className) {
+        errEl.textContent = "Введите и название команды, и класс!";
+        errEl.classList.remove("hidden");
+        return;
+      }
+      errEl.classList.add("hidden");
+
+      const btn = document.getElementById("startQuizBtn");
+      btn.disabled = true;
+      btn.textContent = "Подключение...";
+
+      try {
+        const teamId = "team_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+        currentTeamId = teamId;
+        localStorage.setItem("wf_team_id", teamId);
+
+        const newTeam = {
+          id: teamId,
+          name: teamName,
+          className: className,
+          createdAt: Date.now(),
+          grammarFinished: false,
+          grammarRaw: 0,
+          grammarEasyRaw: 0,
+          grammarHardRaw: 0,
+          grammarFinal: 0,
+          writingByJudge: {},
+          speaking: { ad: 0, spont: 0, total: 0 }
+        };
+
+        await saveTeamData(teamId, newTeam);
+
+        qIndex = 0;
+        answersMap = {};
+        document.getElementById("quizTeamTitle").textContent = `${teamName} (${className})`;
+        showScreen("screenQuiz");
+        renderQuestion();
+      } catch (e) {
+        errEl.textContent = "Ошибка подключения к базе данных. Проверьте интернет и Rules в Firebase.";
+        errEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Зарегистрировать и начать Grammar";
+      }
+    }
+
+    function renderQuestion() {
+      clearInterval(timerInterval);
+      selectedOption = null;
+      timeLeft = QUESTION_SECONDS;
+
+      const item = QUESTIONS[qIndex];
+      const levelLabel = item.level === "easy" ? "Easy (1 pt)" : "Hard (2 pts)";
+      document.getElementById("quizMeta").textContent = `Вопрос ${qIndex + 1} / ${QUESTIONS.length} • ${levelLabel}`;
+      document.getElementById("quizProgress").style.width = `${((qIndex + 1) / QUESTIONS.length) * 100}%`;
+      document.getElementById("questionText").textContent = item.q;
+      document.getElementById("answerStatus").textContent = "Выберите вариант ответа (A–D)";
+
+      const grid = document.getElementById("optionsGrid");
+      grid.innerHTML = "";
+
+      item.opts.forEach(optText => {
+        const letter = optText.trim().charAt(0).toUpperCase();
+        const btn = document.createElement("button");
+        btn.className = "opt-btn";
+        btn.textContent = optText;
+        btn.onclick = () => {
+          selectedOption = letter;
+          document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          document.getElementById("answerStatus").textContent = `Ответ ${letter} зафиксирован`;
+        };
+        grid.appendChild(btn);
+      });
+
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          submitCurrentAndNext();
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      const box = document.getElementById("questionTimer");
+      box.textContent = `${timeLeft}s`;
+      if (timeLeft <= 5) box.classList.add("urgent");
+      else box.classList.remove("urgent");
+    }
+
+    async function submitCurrentAndNext() {
+      clearInterval(timerInterval);
+      const item = QUESTIONS[qIndex];
+      answersMap[item.id] = selectedOption || null;
+
+      if (qIndex + 1 < QUESTIONS.length) {
+        qIndex++;
+        renderQuestion();
+      } else {
+        await finishGrammarRound();
+      }
+    }
+
+    async function finishGrammarRound() {
+      let easyRaw = 0;
+      let hardRaw = 0;
+
+      QUESTIONS.forEach(item => {
+        const chosen = answersMap[item.id];
+        if (chosen && chosen === item.ans) {
+          if (item.level === "easy") easyRaw += 1;
+          else hardRaw += 2;
+        }
+      });
+
+      const rawTotal = easyRaw + hardRaw; // max 48
+      const finalGrammar = Number(((rawTotal / 48) * 20).toFixed(2)); // max 20
+
+      await updateTeamPartial(currentTeamId, {
+        grammarFinished: true,
+        grammarEasyRaw: easyRaw,
+        grammarHardRaw: hardRaw,
+        grammarRaw: rawTotal,
+        grammarFinal: finalGrammar
+      });
+
+      showScreen("screenTeamDone");
+    }
+
+    // ==========================================
+    // 5. СУДЬИ И ПОДСЧЁТ БАЛЛОВ
+    // ==========================================
+    function loginJudge() {
+      const secret = document.getElementById("secretWordInput").value.trim();
+      const name = document.getElementById("judgeNameInput").value.trim() || "Judge";
+      const err = document.getElementById("judgeAuthError");
+
+      if (secret !== JUDGE_SECRET) {
+        err.classList.remove("hidden");
+        return;
+      }
+
+      err.classList.add("hidden");
+      currentJudgeName = name;
+      sessionStorage.setItem("wf_judge_name", name);
+      document.getElementById("judgeLoggedAs").textContent = `Судья: ${currentJudgeName}`;
+      showScreen("screenJudgePanel");
+      listenTeams(renderJudgeViews);
+    }
+
+    function logoutJudge() {
+      currentJudgeName = null;
+      sessionStorage.removeItem("wf_judge_name");
+      showScreen("screenHome");
+    }
+
+    function switchJudgeTab(tabId, btnEl) {
+      document.querySelectorAll(".judge-tab").forEach(t => t.classList.add("hidden"));
+      document.getElementById(tabId).classList.remove("hidden");
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btnEl.classList.add("active");
+      renderJudgeViews(teamsCache);
+    }
+
+    function getWritingAverage(team) {
+      const judgesObj = team.writingByJudge || {};
+      const vals = Object.values(judgesObj).map(v => Number(v.total || 0));
+      if (!vals.length) return 0;
+      const sum = vals.reduce((a, b) => a + b, 0);
+      return Number((sum / vals.length).toFixed(2));
+    }
+
+    function getSpeakingTotal(team) {
+      if (!team.speaking) return 0;
+      const ad = Number(team.speaking.ad || 0);
+      const sp = Number(team.speaking.spont || 0);
+      return Number((ad + sp).toFixed(2));
+    }
+
+    function renderJudgeViews(teamsObj) {
+      const list = Object.values(teamsObj || {});
+
+      const wSel = document.getElementById("writingTeamSelect");
+      const sSel = document.getElementById("speakingTeamSelect");
+      const prevW = wSel.value;
+      const prevS = sSel.value;
+
+      const optionsHtml = list.length
+        ? list.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (${escapeHtml(t.className)})</option>`).join("")
+        : `<option value="">Нет зарегистрированных команд</option>`;
+
+      wSel.innerHTML = optionsHtml;
+      sSel.innerHTML = optionsHtml;
+      if (prevW && teamsObj[prevW]) wSel.value = prevW;
+      if (prevS && teamsObj[prevS]) sSel.value = prevS;
+
+      loadWritingForm();
+      loadSpeakingForm();
+
+      const ranked = list.map(t => {
+        const g = Number(t.grammarFinal || 0);
+        const w = getWritingAverage(t);
+        const s = getSpeakingTotal(t);
+        const total = Number((g + w + s).toFixed(2));
+        return { ...t, g, w, s, total };
+      }).sort((a, b) => b.total - a.total);
+
+      const lbBody = document.getElementById("leaderboardBody");
+      lbBody.innerHTML = ranked.length
+        ? ranked.map((t, idx) => `
+            <tr class="${idx === 0 ? "top-1" : ""}">
+              <td>${idx + 1}</td>
+              <td><b>${escapeHtml(t.name)}</b></td>
+              <td>${escapeHtml(t.className)}</td>
+              <td>${t.g.toFixed(2)}</td>
+              <td>${t.w.toFixed(2)}</td>
+              <td>${t.s.toFixed(2)}</td>
+              <td><b>${t.total.toFixed(2)}</b></td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="7" style="color:var(--muted);">Команды ещё не зарегистрированы</td></tr>`;
+
+      const gBody = document.getElementById("grammarTableBody");
+      gBody.innerHTML = ranked.length
+        ? ranked.map(t => `
+            <tr>
+              <td><b>${escapeHtml(t.name)}</b></td>
+              <td>${escapeHtml(t.className)}</td>
+              <td>${t.grammarEasyRaw || 0} / 16</td>
+              <td>${t.grammarHardRaw || 0} / 32</td>
+              <td>${t.grammarRaw || 0} / 48</td>
+              <td><b>${Number(t.grammarFinal || 0).toFixed(2)}</b></td>
+              <td>${t.grammarFinished ? "Завершён" : "В процессе / Ожидание"}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="7" style="color:var(--muted);">Нет данных</td></tr>`;
+    }
+
+    function loadWritingForm() {
+      const teamId = document.getElementById("writingTeamSelect").value;
+      const fb = document.getElementById("writingFeedback");
+      fb.classList.add("hidden");
+      if (!teamId || !teamsCache[teamId]) return;
+
+      const myScore = (teamsCache[teamId].writingByJudge || {})[encodeKey(currentJudgeName || "")];
+      document.getElementById("wAcc").value = myScore ? myScore.acc : 0;
+      document.getElementById("wVoc").value = myScore ? myScore.voc : 0;
+      document.getElementById("wCre").value = myScore ? myScore.cre : 0;
+      document.getElementById("wRel").value = myScore ? myScore.rel : 0;
+      document.getElementById("wCoh").value = myScore ? myScore.coh : 0;
+    }
+
+    async function saveWritingScore() {
+      const teamId = document.getElementById("writingTeamSelect").value;
+      if (!teamId || !currentJudgeName) return;
+
+      const clamp6 = id => Math.max(0, Math.min(6, Number(document.getElementById(id).value || 0)));
+      const acc = clamp6("wAcc");
+      const voc = clamp6("wVoc");
+      const cre = clamp6("wCre");
+      const rel = clamp6("wRel");
+      const coh = clamp6("wCoh");
+      const total = Number((acc + voc + cre + rel + coh).toFixed(2));
+
+      if (isCloud) {
+        await db.ref(`teams/${teamId}/writingByJudge/${encodeKey(currentJudgeName)}`).set({
+          judge: currentJudgeName, acc, voc, cre, rel, coh, total
+        });
+      } else {
+        const t = teamsCache[teamId];
+        t.writingByJudge = t.writingByJudge || {};
+        t.writingByJudge[encodeKey(currentJudgeName)] = { judge: currentJudgeName, acc, voc, cre, rel, coh, total };
+        await saveTeamData(teamId, t);
+      }
+
+      const avg = getWritingAverage(teamsCache[teamId]);
+      const fb = document.getElementById("writingFeedback");
+      fb.textContent = `Сохранено (${total} / 30 от вас). Текущее среднее по всем судьям: ${avg} / 30.`;
+      fb.classList.remove("hidden");
+      renderJudgeViews(teamsCache);
+    }
+
+    function loadSpeakingForm() {
+      const teamId = document.getElementById("speakingTeamSelect").value;
+      const fb = document.getElementById("speakingFeedback");
+      fb.classList.add("hidden");
+      if (!teamId || !teamsCache[teamId]) return;
+
+      const sp = teamsCache[teamId].speaking || { ad: 0, spont: 0 };
+      document.getElementById("spAd").value = sp.ad || 0;
+      document.getElementById("spSpont").value = sp.spont || 0;
+    }
+
+    async function saveSpeakingScore() {
+      const teamId = document.getElementById("speakingTeamSelect").value;
+      if (!teamId) return;
+
+      const ad = Math.max(0, Math.min(30, Number(document.getElementById("spAd").value || 0)));
+      const spont = Math.max(0, Math.min(20, Number(document.getElementById("spSpont").value || 0)));
+      const total = Number((ad + spont).toFixed(2));
+
+      await updateTeamPartial(teamId, {
+        speaking: { ad, spont, total }
+      });
+
+      const fb = document.getElementById("speakingFeedback");
+      fb.textContent = `Сохранено: ${total} / 50 (Advertising: ${ad}, Spontaneous: ${spont}).`;
+      fb.classList.remove("hidden");
+      renderJudgeViews(teamsCache);
+    }
+
+    function encodeKey(str) {
+      return str.replace(/[.#$/[\]]/g, "_");
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    if (currentJudgeName) {
+      document.getElementById("judgeLoggedAs").textContent = `Судья: ${currentJudgeName}`;
+      showScreen("screenJudgePanel");
+      listenTeams(renderJudgeViews);
+    }
+  </script>
+</body>
+</html>
